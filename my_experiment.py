@@ -66,9 +66,9 @@ def experiment(
     # load dataset
     # dataset_path = f'data/{env_name}-{dataset}-v2.pkl'
     if not is_onehot:    
-        dataset_path=f'{dataset}.pkl'
+        dataset_path=f'./data/{dataset}.pkl'
     else:
-        dataset_path=f'{dataset}_onehot.pkl'
+        dataset_path=f'./data/{dataset}_onehot.pkl'
     with open(dataset_path, 'rb') as f:
         trajectories = pickle.load(f)
 

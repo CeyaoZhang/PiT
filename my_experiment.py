@@ -49,8 +49,8 @@ def experiment(
     scale=1
     #todo this might not be correct
     if model_type == 'bc':
-        env_targets = env_targets[:1]  # since BC ignores target, no need for different evaluations
-
+        #env_targets = env_targets[:1]  # since BC ignores target, no need for different evaluations
+        env_targets=1000
     state_dim = env.observation_space.shape[0]
     # act_dim = env.action_space.shape[0]
     if not is_onehot:
@@ -60,15 +60,15 @@ def experiment(
 #    state_dim=gym.spaces.Discrete(16)
 #    act_dim=gym.spaces.Box(-high, high, dtype=np.float32)
     #todo I need complete environment
-    max_ep_len=2000#choose slightly longer than the longest
-    env_targets=[100,200]#this is actually useless because I don't evaluate,so actually I don't know this represents what in gym?
+    max_ep_len=250#choose slightly longer than the longest
+    env_targets=[41,55]#this is actually useless because I don't evaluate,so actually I don't know this represents what in gym?
     #todo this might be not ok 
     # load dataset
     # dataset_path = f'data/{env_name}-{dataset}-v2.pkl'
     if not is_onehot:    
-        dataset_path=f'./data/{dataset}.pkl'
+        dataset_path=f'{dataset}.pkl'
     else:
-        dataset_path=f'./data/{dataset}_onehot.pkl'
+        dataset_path=f'{dataset}_onehot.pkl'
     with open(dataset_path, 'rb') as f:
         trajectories = pickle.load(f)
 
@@ -280,22 +280,12 @@ def experiment(
     action_error=[]
     for iter in range(variant['max_iters']):
         outputs = trainer.train_iteration(num_steps=variant['num_steps_per_iter'], iter_num=iter+1, print_logs=True)
+        if iter==0 or iter==variant['max_iters']//2:
+            trainer.model.save(save_path+'_'+str(iter)+'.pth')
         if log_to_wandb:
             wandb.log(outputs)
-        train_loss_mean.append(outputs['training/train_loss_mean'])
-        train_loss_std.append(outputs['training/train_loss_std'])
-        action_error.append(outputs['training/action_error'])
-    epochs = range(1, variant['max_iters'])
-    plt.errorbar(epochs, train_loss_mean, yerr=train_loss_std, fmt='o', capsize=4)
-    plt.xlabel('Epochs')
-    plt.ylabel('Train Loss')
-    plt.title('Train Loss Mean and Standard Deviation')
-    plt.grid(True)
-    plt.savefig(variant['png_path']+'1'+'.png')
-    plt.plot(action_error)
-    plt.savefig(variant['png_path']+'2'+'.png')
-    if save_model:
-        trainer.model.save(save_path)
+    if save_model and model_type=='dt':
+        trainer.model.save(save_path+'_'+str(variant['max_iters'])+'.pth')
 
 
 if __name__ == '__main__':
@@ -308,7 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--model_type', type=str, default='dt')  # dt for decision transformer, bc for behavior cloning
     parser.add_argument('--embed_dim', type=int, default=128)
-    parser.add_argument('--n_layer', type=int, default=3)
+    parser.add_argument('--n_layer', type=int, default=2)
     parser.add_argument('--n_head', type=int, default=1)
     parser.add_argument('--activation_function', type=str, default='relu')
     parser.add_argument('--dropout', type=float, default=0.1)

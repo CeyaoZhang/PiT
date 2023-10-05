@@ -143,7 +143,35 @@ class DecisionTransformer(TrajectoryModel):
         torch.save(self.state_dict(), filepath)
 #todo these two functions are added by myself
     @classmethod
-    def load(cls, filepath):
-        model = cls()
+    def load(cls,setting,filepath):
+        #todo specially for PiT
+        model = cls(
+            state_dim=setting['state_dim'],
+            act_dim=setting['act_dim'],
+            max_length=setting['max_length'],
+            max_ep_len=setting['max_ep_len'],
+            hidden_size=setting['hidden_size'],
+            n_layer=setting['n_layer'],
+            n_head=setting['n_head'],
+            n_inner=setting['n_inner'],
+            activation_function=setting['activation_function'],
+            n_positions=setting['n_positions'],
+            resid_pdrop=setting['resid_pdrop'],
+            attn_pdrop=setting['attn_pdrop']
+            )
+        '''                    
+            "state_dim":state_dim,
+            "act_dim":act_dim,
+            "max_length":20,
+            "max_ep_len":max_ep_len,
+            "hidden_size":128,
+            "n_layer":3,
+            "n_head":1,
+            "n_inner":4*128,
+            "activation_function":'relu',
+            "n_positions":1024,
+            "resid_pdrop":0.1,
+            "attn_pdrop":0.1
+        '''
         model.load_state_dict(torch.load(filepath))
         return model

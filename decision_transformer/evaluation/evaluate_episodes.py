@@ -53,13 +53,15 @@ def evaluate_episode(
         states = torch.cat([states, cur_state], dim=0)
         rewards[-1] = reward
 
-        episode_return += reward
+        #episode_return += reward
+        episode_return=reward
+        #todo just for fdtd
         episode_length += 1
 
         if done:
             break
 
-    return episode_return, episode_length
+    return episode_return, episode_length,states,rewards,
 
 
 def evaluate_episode_rtg(
@@ -114,13 +116,17 @@ def evaluate_episode_rtg(
         )
         actions[-1] = action
         action = action.detach().cpu().numpy()
-
+        action = np.argmax(action)
         state, reward, done, _ = env.step(action)
 
         cur_state = torch.from_numpy(state).to(device=device).reshape(1, state_dim)
         states = torch.cat([states, cur_state], dim=0)
-        rewards[-1] = reward
-
+        if len(rewards)==1:
+            rewards[-1] = torch.from_numpy(np.array(reward)).to(device=device)
+            cur_rtg=torch.from_numpy(np.array(reward)).to(device=device)
+        else:
+            rewards[-1]= torch.from_numpy(np.array(reward)).to(device=device)-cur_rtg
+            cur_rtg=torch.from_numpy(np.array(reward)).to(device=device)
         if mode != 'delayed':
             pred_return = target_return[0,-1] - (reward/scale)
         else:
@@ -131,10 +137,12 @@ def evaluate_episode_rtg(
             [timesteps,
              torch.ones((1, 1), device=device, dtype=torch.long) * (t+1)], dim=1)
 
-        episode_return += reward
+        # episode_return += reward
+        episode_return=reward
+        #todo just for fdtd
         episode_length += 1
 
         if done:
             break
 
-    return episode_return, episode_length
+    return episode_return, episode_length,states,rewards

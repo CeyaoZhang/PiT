@@ -46,13 +46,17 @@ def evaluate_episode(
         )
         actions[-1] = action
         action = action.detach().cpu().numpy()
-
+        action = np.argmax(action)
         state, reward, done, _ = env.step(action)
-
+        if len(rewards)==1:
+            rewards[-1] = torch.from_numpy(np.array(reward)).to(device=device)
+            cur_rtg=torch.from_numpy(np.array(reward)).to(device=device)
+        else:
+            rewards[-1]= torch.from_numpy(np.array(reward)).to(device=device)-cur_rtg
+            cur_rtg=torch.from_numpy(np.array(reward)).to(device=device)
+        
         cur_state = torch.from_numpy(state).to(device=device).reshape(1, state_dim)
         states = torch.cat([states, cur_state], dim=0)
-        rewards[-1] = reward
-
         #episode_return += reward
         episode_return=reward
         #todo just for fdtd
@@ -61,7 +65,7 @@ def evaluate_episode(
         if done:
             break
 
-    return episode_return, episode_length,states,rewards,
+    return episode_return, episode_length,states,rewards
 
 
 def evaluate_episode_rtg(
@@ -93,7 +97,6 @@ def evaluate_episode_rtg(
     states = torch.from_numpy(state).reshape(1, state_dim).to(device=device, dtype=torch.float32)
     actions = torch.zeros((0, act_dim), device=device, dtype=torch.float32)
     rewards = torch.zeros(0, device=device, dtype=torch.float32)
-
     ep_return = target_return
     target_return = torch.tensor(ep_return, device=device, dtype=torch.float32).reshape(1, 1)
     timesteps = torch.tensor(0, device=device, dtype=torch.long).reshape(1, 1)
@@ -131,6 +134,9 @@ def evaluate_episode_rtg(
             pred_return = target_return[0,-1] - (reward/scale)
         else:
             pred_return = target_return[0,-1]
+        #especially for fdtd
+        if len(rewards)!=1:
+            pred_return=pred_return + (rewards[-2]/scale)
         target_return = torch.cat(
             [target_return, pred_return.reshape(1, 1)], dim=1)
         timesteps = torch.cat(
@@ -145,4 +151,4 @@ def evaluate_episode_rtg(
         if done:
             break
 
-    return episode_return, episode_length,states,rewards
+    return episode_return, episode_length,states,rewards,target_return
